@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paznwise — System Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent2: #bc8cff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --orange: #db6d28;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 0;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+    }
+    /* Headings */
+    h1 { font-size: 2.2em; font-weight: 700; margin: 0 0 8px; background: linear-gradient(135deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 1.5em; font-weight: 600; color: var(--accent); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.2em; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+    h4 { font-size: 1.05em; font-weight: 600; color: var(--text-muted); margin: 24px 0 8px; }
+    p { margin: 0 0 16px; color: var(--text); }
+    strong { color: var(--text); font-weight: 600; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    /* Lists */
+    ul, ol { margin: 0 0 16px 24px; }
+    li { margin-bottom: 6px; }
+    li input[type="checkbox"] { margin-right: 6px; }
+    /* Code */
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 0 0 20px;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 0 0 24px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.9em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9em;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(88, 166, 255, 0.04); }
+    /* Blockquotes / Alerts */
+    blockquote {
+      border-left: 4px solid var(--accent);
+      background: rgba(88, 166, 255, 0.06);
+      padding: 16px 20px;
+      margin: 0 0 20px;
+      border-radius: 0 10px 10px 0;
+    }
+    blockquote p { margin: 0; }
+    blockquote p:first-child { font-weight: 600; }
+    /* GH alerts */
+    .alert-note { border-left-color: var(--accent); background: rgba(88, 166, 255, 0.06); }
+    .alert-important { border-left-color: var(--accent2); background: rgba(188, 140, 255, 0.06); }
+    .alert-warning { border-left-color: var(--yellow); background: rgba(210, 153, 34, 0.06); }
+    .alert-tip { border-left-color: var(--green); background: rgba(63, 185, 80, 0.06); }
+    .alert-caution { border-left-color: var(--red); background: rgba(248, 81, 73, 0.06); }
+    .alert-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 8px; }
+    /* Mermaid */
+    .mermaid {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin: 0 0 20px;
+      text-align: center;
+    }
+    .mermaid svg { max-width: 100%; }
+    /* TOC sidebar indicator */
+    .toc-bar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #58a6ff 0%, #bc8cff 50%, #3fb950 100%);
+      z-index: 100;
+    }
+    /* Scroll progress */
+    .progress {
+      position: fixed;
+      top: 0; left: 0;
+      width: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #58a6ff, #bc8cff);
+      z-index: 200;
+      transition: width 0.1s;
+    }
+    /* Images */
+    img { max-width: 100%; border-radius: 10px; }
+    /* Print */
+    @media print {
+      body { background: #fff; color: #000; }
+      .toc-bar, .progress { display: none; }
+      h1 { -webkit-text-fill-color: #000; }
+      h2 { color: #333; }
+      pre, code, table { border-color: #ccc; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toc-bar"></div>
+  <div class="progress" id="progress"></div>
+  <div class="container" id="content">
+    <p style="color: var(--text-muted); text-align: center; padding: 80px 0;">Loading architecture document...</p>
+  </div>
+
+  <script>
+    // Scroll progress
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement;
+      const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+      document.getElementById('progress').style.width = pct + '%';
+    });
+
+    // GitHub alert processing
+    function processAlerts(html) {
+      const alertTypes = {
+        'NOTE': { class: 'alert-note', icon: 'ℹ️', color: '#58a6ff' },
+        'TIP': { class: 'alert-tip', icon: '💡', color: '#3fb950' },
+        'IMPORTANT': { class: 'alert-important', icon: '📌', color: '#bc8cff' },
+        'WARNING': { class: 'alert-warning', icon: '⚠️', color: '#d29922' },
+        'CAUTION': { class: 'alert-caution', icon: '🔴', color: '#f85149' }
+      };
+      for (const [type, cfg] of Object.entries(alertTypes)) {
+        const regex = new RegExp(
+          `<blockquote>\\s*<p>\\[!${type}\\]\\s*<br>([\\s\\S]*?)</p>\\s*</blockquote>`,
+          'gi'
+        );
+        html = html.replace(regex, (_, content) =>
+          `<blockquote class="${cfg.class}"><p><span class="alert-label" style="color:${cfg.color}">${cfg.icon} ${type}</span><br>${content.trim()}</p></blockquote>`
+        );
+        // Handle multi-line  
+        const regex2 = new RegExp(
+          `<blockquote>\\s*<p>\\[!${type}\\]</p>\\s*<p>([\\s\\S]*?)</p>\\s*</blockquote>`,
+          'gi'
+        );
+        html = html.replace(regex2, (_, content) =>
+          `<blockquote class="${cfg.class}"><p><span class="alert-label" style="color:${cfg.color}">${cfg.icon} ${type}</span></p><p>${content.trim()}</p></blockquote>`
+        );
+      }
+      return html;
+    }
+
+    // Load and render markdown
+    async function loadDoc() {
+      try {
+        const resp = await fetch('architecture.md');
+        const md = await resp.text();
+        
+        // Configure marked
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+          tables: true
+        });
+
+        // Custom renderer for mermaid
+        const renderer = new marked.Renderer();
+        const origCode = renderer.code;
+        renderer.code = function(code) {
+          const text = typeof code === 'object' ? code.text : code;
+          const lang = typeof code === 'object' ? code.lang : arguments[1];
+          if (lang === 'mermaid') {
+            return `<div class="mermaid">${text}</div>`;
+          }
+          return `<pre><code class="language-${lang || ''}">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+        };
+        marked.use({ renderer });
+
+        let html = marked.parse(md);
+        html = processAlerts(html);
+        document.getElementById('content').innerHTML = html;
+
+        // Init mermaid
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: 'dark',
+          themeVariables: {
+            primaryColor: '#1f2937',
+            primaryBorderColor: '#58a6ff',
+            primaryTextColor: '#e6edf3',
+            lineColor: '#58a6ff',
+            secondaryColor: '#161b22',
+            tertiaryColor: '#0d1117',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px'
+          },
+          flowchart: { curve: 'monotoneX', padding: 15 },
+          sequence: { actorMargin: 50, noteMargin: 10 }
+        });
+        mermaid.run();
+      } catch (err) {
+        document.getElementById('content').innerHTML = 
+          `<p style="color: var(--red);">Error loading document: ${err.message}</p>`;
+      }
+    }
+
+    loadDoc();
+  </script>
+</body>
+</html>
